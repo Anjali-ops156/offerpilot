@@ -1,0 +1,35 @@
+# Offer catalogue — the menu of offers the engine/agent is allowed to choose from.
+# A marketing person can add a new offer type here without touching any code,
+# as long as it stays within the hard limits in limits.yaml.
+#
+# type: a short machine-readable id used by code and the rest of the YAML files.
+# kind: how the discount is expressed — "percent_off", "flat_off_inr", "free_shipping",
+#       "bonus_points", "none" (silence is a valid, explicit choice).
+offers:
+  - type: win_back_discount
+    kind: percent_off
+    value: 15
+    label_en: "15% off your next order — we miss you!"
+    label_hi: "aapke agle order par 15% chhoot — hum aapko miss karte hain!"
+    label_pa: "tuhade agle order te 15% chhoot — asin tuhanu miss karde haan!"
+
+  - type: free_shipping
+    kind: free_shipping
+    value: 0
+    label_en: "Free shipping on your next order"
+    label_hi: "aapke agle order par muft shipping"
+    label_pa: "tuhade agle order te muft shipping"
+
+  - type: bonus_points
+    kind: bonus_points
+    value: 100
+    label_en: "100 bonus reward points, just for you"
+    label_hi: "aapke liye 100 bonus reward points"
+    label_pa: "tuhade layi 100 bonus reward points"
+
+  - type: no_offer
+    kind: none
+    value: 0
+    label_en: ""
+    label_hi: ""
+    label_pa: ""

@@ -1,0 +1,10 @@
+# Hard limits every offer must respect, no matter who (or what AI) picked it.
+# These are the guardrails a marketing lead can tighten/loosen without redeploying code.
+max_discount_pct: 20          # no percent_off offer may exceed this, ever
+min_margin_floor_pct: 10      # discount must never push margin below this
+max_offer_value_inr: 500      # ceiling on the rupee cost of a single offer
+win_back_days_threshold: 45   # days of inactivity before a win-back offer is eligible
+gold_points_bonus_threshold: 500  # min reward points balance to be eligible for bonus_points
+quiet_hours_start_ist: 22      # 10pm
+quiet_hours_end_ist: 8         # 8am
+require_consent: true          # consent_opt_in must be true to receive any offer
