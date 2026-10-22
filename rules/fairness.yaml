@@ -1,0 +1,42 @@
+# Fairness and ethics rules. The numeric settings below are enforced by
+# rules/engine.py; the principles in the comments are enforced by CODE
+# DESIGN (what data the engine is even allowed to look at) and checked by
+# tests/test_fairness.py rather than by a YAML number — there's no sensible
+# "max gender discount difference" to tune, the right number is zero.
+#
+# Principles enforced by construction (see tests/test_fairness.py):
+#   - No pricing differences based on gender or location ALONE: the offer
+#     picker never reads Customer.gender, and only ever reads city_tier
+#     (metro/tier2/tier3, a cost-of-delivery proxy), never the raw city.
+#   - No pressure tactics: no fake countdowns, no fabricated scarcity.
+#     Message-level enforcement is in rules/engine.py's FORBIDDEN_PRESSURE_PHRASES,
+#     checked by the Phase 4 guardrail validator against every AI-drafted message.
+#   - Opt-out/consent is always respected (require_consent in limits.yaml;
+#     /stop in the bot always works).
+
+# A loyal (higher-tier) customer must NEVER receive a worse win-back
+# discount than a newer/lower-tier one. Keep gold >= silver >= bronze —
+# the conflict checker enforces this ordering on every load.
+win_back_discount_pct_by_tier:
+  gold: 20
+  silver: 17
+  bronze: 15
+
+# Per-category discount caps — tighter than limits.yaml's max_discount_pct
+# for categories that already run thin margins or already return a lot.
+# The smaller of max_discount_pct and a category's cap always wins.
+category_discount_caps:
+  Fashion: 15        # highest return rate category — cap discounts here extra tight
+  Jewellery: 12
+  Electronics: 18
+
+# Phrases a drafted message is never allowed to contain (case-insensitive
+# substring match) — fabricated urgency/scarcity, not genuine deadlines.
+forbidden_pressure_phrases:
+  - "only 1 left"
+  - "only a few left"
+  - "hurry, offer ends"
+  - "going fast"
+  - "almost gone"
+  - "last chance"
+  - "act now"

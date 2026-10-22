@@ -1,5 +1,8 @@
 # Hard limits every offer must respect, no matter who (or what AI) picked it.
 # These are the guardrails a marketing lead can tighten/loosen without redeploying code.
+# Run `python -m offerpilot.rules.conflict_checker` after editing this file —
+# it warns about settings that contradict each other or make an offer impossible.
+
 max_discount_pct: 20          # no percent_off offer may exceed this, ever
 min_margin_floor_pct: 10      # discount must never push margin below this
 max_offer_value_inr: 500      # ceiling on the rupee cost of a single offer
@@ -9,7 +12,23 @@ quiet_hours_start_ist: 22      # 10pm
 quiet_hours_end_ist: 8         # 8am
 require_consent: true          # consent_opt_in must be true to receive any offer
 
+# Spend pacing. daily_budget_inr is the hard ceiling checked before every
+# send; campaign_budget_inr is the whole 30-day campaign envelope it's paced
+# against (so a slow week doesn't block a later catch-up, but we also never
+# blow the month).
+daily_budget_inr: 15000
+campaign_budget_inr: 400000
+
+# Frequency caps + cooldown, enforced against the SentOffer log.
+max_offers_per_day: 1
+max_offers_per_week: 2
+cooldown_days_after_offer: 3   # no new offer within this many days of the last one
+
 # Economics assumptions used to score candidate offers (next-best-action).
 gross_margin_pct: 35          # assumed gross margin on an order BEFORE any discount
 shipping_cost_inr: 60         # cost of a free_shipping offer
 points_to_inr: 0.5            # 1 reward point ~= this many INR of liability
+
+# See also rules/fairness.yaml (tier fairness, category discount caps) and
+# rules/abuse.yaml (coupon/return abuse thresholds) — split out by topic so
+# a marketing reader doesn't have to wade through everything at once.

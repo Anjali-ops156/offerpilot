@@ -1,0 +1,21 @@
+# Abuse protection. Thresholds are checked against BEHAVIOURAL features
+# from the live feature store (discount_sensitivity, return_rate) — never
+# against the hidden persona label. A real platform can't see "this
+# customer is secretly a Coupon Abuser"; it can only see that someone uses
+# a coupon on 9 of their last 10 orders, which is exactly what this does.
+#
+# Multi-account detection is NOT implemented: it needs device/IP/payment
+# fingerprinting signals this synthetic dataset doesn't generate. Documented
+# here as a known gap rather than faked.
+
+abuse_coupon_rate_threshold: 0.75   # discount_sensitivity above this = suspected coupon abuse
+abuse_return_rate_threshold: 0.35   # return_rate above this = suspected serial-returner abuse
+
+# A flagged customer is restricted to these offer KINDS only — no direct
+# monetary discount, so an abuser can still be re-engaged without
+# subsidising the abuse further.
+abuse_allowed_offer_kinds:
+  - free_shipping
+  - early_access
+  - nudge
+  - none

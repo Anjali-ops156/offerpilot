@@ -22,5 +22,5 @@ def format_offer_message(customer: Customer, offer: Offer) -> str:
     if offer.kind == "none":
         body = NO_OFFER_TEXT[lang]
     else:
-        body = getattr(offer, LABEL_FIELD[lang])
+        body = getattr(offer, LABEL_FIELD[lang]).format(pct=int(offer.value))
     return f"{greeting}\n\n{body}"

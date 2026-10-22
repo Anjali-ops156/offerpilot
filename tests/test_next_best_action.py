@@ -44,7 +44,16 @@ def test_rank_offers_prefers_higher_score(catalogue, limits):
     assert ranked[0].score >= ranked[-1].score
 
 
-def test_zero_uplift_means_no_offer_wins_over_costly_ones(catalogue, limits):
-    uplift_by_offer = {"win_back_discount": 0.0, "bonus_points": 0.0, "no_offer": 0.0}
+def test_zero_uplift_means_no_offer_beats_every_costed_offer(catalogue, limits):
+    # Zero uplift -> any offer with a real cost (percent_off/flat/points/bogo/
+    # shipping) scores negative; no_offer (free, zero-effect) scores exactly
+    # 0 and must beat all of them. Zero-cost nudge/early-access kinds also
+    # score 0 and are excluded here deliberately — this test is about costed
+    # offers specifically.
+    costed = {o.type for o in catalogue.offers if o.kind not in ("nudge", "early_access", "none")}
+    uplift_by_offer = {t: 0.0 for t in costed}
     ranked = rank_offers(uplift_by_offer, 1000, catalogue.offers, limits)
-    assert ranked[0].offer_type == "no_offer"  # zero uplift -> every paid offer is pure cost
+    no_offer_score = next(r for r in ranked if r.offer_type == "no_offer").score
+    for r in ranked:
+        if r.offer_type in costed:
+            assert no_offer_score >= r.score

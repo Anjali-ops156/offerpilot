@@ -3,15 +3,34 @@
 # as long as it stays within the hard limits in limits.yaml.
 #
 # type: a short machine-readable id used by code and the rest of the YAML files.
-# kind: how the discount is expressed — "percent_off", "flat_off_inr", "free_shipping",
-#       "bonus_points", "none" (silence is a valid, explicit choice).
+# kind: how the offer is expressed —
+#   percent_off     - % off the order (cost = order_value * value/100)
+#   flat_off_inr    - flat Rs off (cost = value)
+#   free_shipping   - free shipping (cost = limits.shipping_cost_inr)
+#   bonus_points    - reward points (cost = value * limits.points_to_inr)
+#   bogo            - buy-one-get-one, `value` = % off the 2nd item (cost ~= order_value * 0.5 * value/100)
+#   early_access    - early access to a sale, no direct monetary cost
+#   nudge           - a reminder message with NO discount (cart recovery, points expiring) — zero cost
+#   none            - silence is a valid, explicit choice
+#
+# win_back_discount's actual percent_off VALUE is looked up per loyalty tier
+# in limits.yaml -> win_back_discount_pct_by_tier (gold gets the best deal,
+# never worse than a newer/lower-tier customer — see rules/fairness.yaml).
+# The `value` here is just the bronze-tier/default fallback.
 offers:
   - type: win_back_discount
     kind: percent_off
     value: 15
-    label_en: "15% off your next order — we miss you!"
-    label_hi: "aapke agle order par 15% chhoot — hum aapko miss karte hain!"
-    label_pa: "tuhade agle order te 15% chhoot — asin tuhanu miss karde haan!"
+    label_en: "{pct}% off your next order — we miss you!"
+    label_hi: "aapke agle order par {pct}% chhoot — hum aapko miss karte hain!"
+    label_pa: "tuhade agle order te {pct}% chhoot — asin tuhanu miss karde haan!"
+
+  - type: welcome_offer
+    kind: flat_off_inr
+    value: 100
+    label_en: "Welcome! ₹100 off your first order"
+    label_hi: "Swagat hai! Aapke pehle order par Rs 100 off"
+    label_pa: "Jee aayan nu! Tuhade pehle order te Rs 100 off"
 
   - type: free_shipping
     kind: free_shipping
@@ -26,6 +45,34 @@ offers:
     label_en: "100 bonus reward points, just for you"
     label_hi: "aapke liye 100 bonus reward points"
     label_pa: "tuhade layi 100 bonus reward points"
+
+  - type: bogo_weekend
+    kind: bogo
+    value: 100
+    label_en: "Buy one, get one free this weekend"
+    label_hi: "is weekend ek lo, ek muft paao"
+    label_pa: "is weekend ik lao, ik muft paao"
+
+  - type: early_sale_access
+    kind: early_access
+    value: 0
+    label_en: "You're in — early access to our next sale"
+    label_hi: "aap shaamil hain — agli sale tak early access"
+    label_pa: "tusi shaamal ho — agli sale tak early access"
+
+  - type: cart_recovery_nudge
+    kind: nudge
+    value: 0
+    label_en: "You left something in your cart — still interested?"
+    label_hi: "aapne cart mein kuch chhoda hai — kya ab bhi interested hain?"
+    label_pa: "tusi cart vich kujh chhadiya hai — ki hale vi interested ho?"
+
+  - type: points_expiry_reminder
+    kind: nudge
+    value: 0
+    label_en: "Your reward points are expiring soon — use them before they're gone"
+    label_hi: "aapke reward points jald expire ho rahe hain — inhe use kar lein"
+    label_pa: "tuhade reward points jaldi expire ho rahe ne — inhan nu use kar lo"
 
   - type: no_offer
     kind: none

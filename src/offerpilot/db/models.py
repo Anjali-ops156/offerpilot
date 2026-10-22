@@ -90,3 +90,34 @@ class HistoricalOfferResponse(Base):
     loyalty_tier = Column(String, nullable=False)
     age_band = Column(String, nullable=True)
     device = Column(String, nullable=True)
+
+
+class SentOffer(Base):
+    """Every offer actually sent to a customer (rule-picked today, AI-picked
+    from Phase 4 on). Backs frequency caps, cooldown, and budget pacing —
+    those guardrails are meaningless without a real record of what already
+    went out. Doubles as the start of the audit trail Phase 4 extends with
+    agent reasoning and validator verdicts."""
+    __tablename__ = "sent_offers"
+
+    id = Column(Integer, primary_key=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False, index=True)
+    offer_type = Column(String, nullable=False)
+    sent_at = Column(DateTime, nullable=False, index=True)
+    cost_inr = Column(Float, nullable=False, default=0.0)
+
+
+class RuleChangeLog(Base):
+    """A snapshot of rules/*.yaml taken whenever they change — "versioned,
+    every change logged with who changed what and when" from the brief.
+    Git history covers code-driven changes; this covers changes made (or to
+    be made, from Phase 7) through the no-code dashboard, where the person
+    editing a slider has no git access."""
+    __tablename__ = "rule_change_log"
+
+    id = Column(Integer, primary_key=True)
+    changed_at = Column(DateTime, nullable=False, index=True)
+    changed_by = Column(String, nullable=False)
+    summary = Column(String, nullable=False)
+    file = Column(String, nullable=False)  # e.g. "limits.yaml"
+    content_snapshot = Column(String, nullable=False)  # full file content at this point

@@ -20,6 +20,10 @@ def offer_cost_inr(expected_order_value: float, offer: Offer, limits: Limits) ->
         return limits.shipping_cost_inr
     if offer.kind == "bonus_points":
         return offer.value * limits.points_to_inr
+    if offer.kind == "bogo":
+        return expected_order_value * 0.5 * offer.value / 100  # value = % off the 2nd item
+    # "early_access" and "nudge" (cart_recovery_nudge, points_expiry_reminder) carry no
+    # direct monetary cost; "none" is silence.
     return 0.0  # "none"
 
 

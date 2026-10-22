@@ -100,3 +100,21 @@ def build_live_feature_store(events: pd.DataFrame, customers: pd.DataFrame, asof
         customers[["id", "city_tier", "loyalty_tier", "age_band", "device", "consent_opt_in"]],
         left_on="customer_id", right_on="id",
     ).drop(columns=["id"])
+
+
+def compute_features_for_customer(customer_id: int, asof: datetime, session) -> dict:
+    """Single-customer feature lookup — queries only that customer's events
+    instead of loading the whole platform, for use on the hot path (e.g. a
+    Telegram /start handler)."""
+    from offerpilot.db.models import Customer, Event  # local import avoids a cycle at module load
+
+    customer = session.get(Customer, customer_id)
+    events = pd.read_sql(
+        session.query(Event).filter(Event.customer_id == customer_id).statement, session.bind
+    )
+    events["timestamp"] = pd.to_datetime(events["timestamp"])
+    customers = pd.DataFrame([{"id": customer.id, "signup_date": pd.to_datetime(customer.signup_date)}])
+    keys = pd.DataFrame({"customer_id": [customer_id], "asof": [pd.Timestamp(asof)]})
+
+    out = compute_features_for(keys, events, customers)
+    return out.iloc[0].to_dict()

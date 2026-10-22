@@ -3,11 +3,12 @@
 An agentic, guardrailed personalised offer engine — built for Hackathon 2
 (Punjab Jobs AI Bootcamp, J-PAL South Asia). All data is synthetic.
 
-**Status: Phase 2 done.** 5,000 synthetic customers with 12 months of
-simulated behaviour feed a feature store, a churn-risk model, a CLV
-estimate, and a T-learner uplift model — currently wired to a deterministic
-rules engine that sends real, personalised Telegram messages. The Claude
-agent and the marketing dashboard land in later phases (see Roadmap below).
+**Status: Phase 3 done.** 5,000 synthetic customers feed a feature store, a
+churn-risk model, and a T-learner uplift model into a full rules engine —
+tier-fair win-back discounts, behavioural abuse protection, budget pacing,
+frequency caps, and a conflict checker — that sends real, personalised,
+guardrailed Telegram messages. The Claude agent and the marketing dashboard
+land in later phases (see Roadmap below).
 
 ## Setup (6 steps)
 
@@ -113,9 +114,38 @@ outcome they're predicting, so there's no future leakage.
 
 All business rules live in [`rules/*.yaml`](rules/), in plain English with
 comments — no code changes needed to adjust them:
-- [`rules/offer_catalogue.yaml`](rules/offer_catalogue.yaml) — the menu of offers.
-- [`rules/limits.yaml`](rules/limits.yaml) — hard caps (max discount, consent,
-  quiet hours, etc.) that every offer, AI-picked or not, must pass.
+- [`rules/offer_catalogue.yaml`](rules/offer_catalogue.yaml) — the menu of offers
+  (% off, flat ₹ off, free shipping, bonus points, BOGO, early sale access,
+  cart-recovery nudge, points-expiry reminder, or explicit silence).
+- [`rules/limits.yaml`](rules/limits.yaml) — discount/margin/value caps, quiet
+  hours, consent, budget pacing (daily + campaign), and frequency/cooldown caps.
+- [`rules/fairness.yaml`](rules/fairness.yaml) — tier-fair win-back discounts
+  (gold never worse than bronze), per-category discount caps, and the
+  forbidden-pressure-tactics phrase list.
+- [`rules/abuse.yaml`](rules/abuse.yaml) — behavioural coupon/return-abuse
+  thresholds and what a flagged customer is still allowed to receive.
+
+After editing any of these, run the conflict checker — it catches settings
+that contradict each other or make an offer impossible before they ship:
+```bash
+python -m offerpilot.rules.conflict_checker
+```
+Every rules change is versioned (who/what/when) via
+[`rules/versioning.py`](src/offerpilot/rules/versioning.py) — git covers
+code-driven edits, this covers edits the Phase 7 no-code dashboard makes on
+a marketer's behalf, who won't have git access:
+```bash
+python -m offerpilot.rules.versioning --by "Anjali" --summary "lowered Fashion cap for Diwali"
+```
+
+**Guardrails actually enforced live in the bot today** (not just declared):
+tier-fair win-back %, per-offer value/margin caps, consent, frequency caps
++ cooldown + daily/campaign budget pacing (backed by a real `SentOffer` log,
+not just a number in a config file), and behavioural abuse restriction
+(coupon-rate / return-rate thresholds from the feature store — never from
+the hidden persona label). Quiet hours is enforced for future proactive
+pushes (Phase 8) but intentionally not against `/start` itself, since that's
+the classmate opening the bot, not the bot interrupting them.
 
 ## Architecture
 
@@ -131,9 +161,11 @@ flowchart LR
     E --> H[Audit Log]
 ```
 
-`B` (feature store, churn, CLV, uplift) is built but not wired in yet — the
-bot still runs `A -> C -> F` with a simple deterministic picker standing in
-for the agent box until Phase 4 connects `B` and `D` together.
+The bot currently runs `A -> B -> C -> F`: the feature store feeds the
+rules engine's abuse check, but the uplift/churn MODELS themselves aren't
+in that live path yet — `C` still uses a simple deterministic picker
+standing in for the `D` agent box until Phase 4 wires the models' scores
+into the decision.
 
 ## Roadmap
 
@@ -142,7 +174,7 @@ for the agent box until Phase 4 connects `B` and `D` together.
 | 0 | Thin end-to-end slice (data → rules → bot) | ✅ done |
 | 1 | Full synthetic data generator + realism validation | ✅ done |
 | 2 | RFM, churn model, uplift (T-learner) model | ✅ done |
-| 3 | Full rules engine, conflict checker, versioning | planned |
+| 3 | Full rules engine, conflict checker, versioning | ✅ done |
 | 4 | Claude tool-use agent + guardrail validator | planned |
 | 5 | Full Telegram bot (cards, /why, /simulate, negotiation, i18n) | planned |
 | 6 | Holdout measurement, basic offline evaluation | stretch |
