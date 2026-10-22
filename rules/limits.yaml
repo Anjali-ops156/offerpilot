@@ -8,3 +8,8 @@ gold_points_bonus_threshold: 500  # min reward points balance to be eligible for
 quiet_hours_start_ist: 22      # 10pm
 quiet_hours_end_ist: 8         # 8am
 require_consent: true          # consent_opt_in must be true to receive any offer
+
+# Economics assumptions used to score candidate offers (next-best-action).
+gross_margin_pct: 35          # assumed gross margin on an order BEFORE any discount
+shipping_cost_inr: 60         # cost of a free_shipping offer
+points_to_inr: 0.5            # 1 reward point ~= this many INR of liability

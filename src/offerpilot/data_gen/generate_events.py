@@ -170,12 +170,17 @@ def simulate_customer(
 
         if random.random() < 0.25:
             category = _pick_category(preferred_category)
-            events.append(Event(customer_id=customer.id, event_type="add_to_cart", timestamp=_random_time_on(d), category=category))
+            cart_amount = round(min(max(float(np.random.lognormal(
+                mean=np.log(max(params.aov_mean, 50)), sigma=params.aov_sigma)), 99.0), 25000.0), 2)
+            events.append(Event(
+                customer_id=customer.id, event_type="add_to_cart", timestamp=_random_time_on(d),
+                category=category, amount=cart_amount,
+            ))
             if random.random() < 0.65:  # most add-to-carts never convert
                 events.append(Event(
                     customer_id=customer.id, event_type="cart_abandon",
                     timestamp=_random_time_on(d) + timedelta(hours=random.randint(1, 20)),
-                    category=category,
+                    category=category, amount=cart_amount,
                 ))
 
     return events, total_spend, last_purchase_date

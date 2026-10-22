@@ -57,3 +57,36 @@ class Event(Base):
     related_event_id = Column(Integer, ForeignKey("events.id"), nullable=True)
 
     customer = relationship("Customer", back_populates="events")
+
+
+class HistoricalOfferResponse(Base):
+    """Simulated log of past (pre-agent) marketing offers: a 50/50 randomised
+    treated/control exposure plus whether the customer purchased within the
+    follow-up window. This is the ONLY place `offerpilot.data_gen` is allowed
+    to let the hidden uplift label leak into generated data — it shapes how
+    a treated customer responds, exactly as a real customer's unobservable
+    persuadability would. Everything else here (the feature columns) is
+    exactly what the uplift model is allowed to train on; persona and
+    latent_uplift_label are intentionally NOT columns on this table.
+    """
+    __tablename__ = "historical_offer_responses"
+
+    id = Column(Integer, primary_key=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False, index=True)
+    offer_timestamp = Column(DateTime, nullable=False)
+    treated = Column(Boolean, nullable=False)
+    responded = Column(Boolean, nullable=False)  # purchased within the follow-up window
+
+    # features AS THEY WERE at offer_timestamp — not the customer's current state
+    recency_days = Column(Integer, nullable=False)
+    frequency = Column(Integer, nullable=False)
+    monetary = Column(Float, nullable=False)
+    avg_order_value = Column(Float, nullable=False)
+    discount_sensitivity = Column(Float, nullable=False)
+    return_rate = Column(Float, nullable=False)
+    category_affinity_share = Column(Float, nullable=False)
+    tenure_days = Column(Integer, nullable=False)
+    city_tier = Column(String, nullable=False)
+    loyalty_tier = Column(String, nullable=False)
+    age_band = Column(String, nullable=True)
+    device = Column(String, nullable=True)

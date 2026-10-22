@@ -33,3 +33,6 @@ class Limits(BaseModel):
     quiet_hours_start_ist: int = Field(ge=0, le=23)
     quiet_hours_end_ist: int = Field(ge=0, le=23)
     require_consent: bool = True
+    gross_margin_pct: float = Field(ge=0, le=100, default=35)
+    shipping_cost_inr: float = Field(ge=0, default=60)
+    points_to_inr: float = Field(ge=0, default=0.5)

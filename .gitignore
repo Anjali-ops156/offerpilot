@@ -5,6 +5,7 @@ venv/
 .env
 data/*.db
 data/validation/*.png
+data/models/
 data/raw/*.csv
 !data/raw/.gitkeep
 !data/raw/sample_customers.csv
