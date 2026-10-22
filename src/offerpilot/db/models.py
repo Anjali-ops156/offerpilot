@@ -1,8 +1,8 @@
 """SQLAlchemy models. Schema is intentionally wider than the thin-slice generator
 fills in — Phase 1's full generator will populate the rest without a migration.
 """
-from sqlalchemy import Boolean, Column, Float, Integer, String
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
@@ -19,11 +19,13 @@ class Customer(Base):
     language = Column(String, nullable=False, default="en")  # en | hi | pa
     device = Column(String, nullable=True)
     signup_channel = Column(String, nullable=True)
+    signup_date = Column(Date, nullable=True)
     loyalty_tier = Column(String, nullable=True)  # bronze | silver | gold
     reward_points_balance = Column(Integer, default=0)
     consent_opt_in = Column(Boolean, default=True)
 
-    # feature-store-ish fields used directly by the rule-based picker in the thin slice
+    # feature-store-ish fields — set by generate_customers.py for the thin
+    # slice, OVERWRITTEN from real simulated events once generate_events.py runs
     days_since_last_purchase = Column(Integer, default=9999)
     total_spend = Column(Float, default=0.0)
 
@@ -33,3 +35,25 @@ class Customer(Base):
 
     # bound once a classmate runs /start against this synthetic customer
     telegram_chat_id = Column(Integer, nullable=True, unique=True)
+
+    events = relationship("Event", back_populates="customer", cascade="all, delete-orphan")
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False, index=True)
+    event_type = Column(String, nullable=False, index=True)
+    # session | product_view | add_to_cart | cart_abandon | purchase | return
+    # | payment_failure | review | support_ticket
+    timestamp = Column(DateTime, nullable=False, index=True)
+
+    category = Column(String, nullable=True)
+    amount = Column(Float, nullable=True)
+    payment_method = Column(String, nullable=True)  # "cod" | "prepaid"
+    coupon_code = Column(String, nullable=True)
+    rating = Column(Integer, nullable=True)
+    related_event_id = Column(Integer, ForeignKey("events.id"), nullable=True)
+
+    customer = relationship("Customer", back_populates="events")

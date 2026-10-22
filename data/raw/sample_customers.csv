@@ -1,0 +1,16 @@
+id,name,city,city_tier,age_band,gender,language,device,signup_channel,signup_date,loyalty_tier,reward_points_balance,consent_opt_in,days_since_last_purchase,total_spend,persona,latent_uplift_label
+758,Komal Dhillon,Ludhiana,tier2,45-54,F,en,android,ad,2026-09-15,silver,14,True,4,1468.74,At-Risk,lost-cause
+1869,Arshdeep Kaur,Hoshiarpur,tier3,55+,M,hi,android,referral,2026-09-08,silver,0,False,9999,0.0,Window Shopper,persuadable
+2828,Harpreet Dhillon,Jalandhar,tier2,35-44,M,en,android,organic,2026-02-05,bronze,0,True,59,0.0,Window Shopper,lost-cause
+2917,Priya Singh,Amritsar,tier2,35-44,M,hi,android,organic,2025-12-03,gold,128,True,2,18201.76,Deal Hunter,persuadable
+2962,Jasmine Sharma,Patiala,tier2,55+,other,en,ios,ad,2026-02-01,gold,251,True,7,26812.85,High-Value Returner,sure-thing
+3216,Jasleen Brar,Ludhiana,tier2,18-24,F,hi,ios,referral,2026-04-14,bronze,316,True,0,30576.43,High-Value Returner,sure-thing
+3236,Harpreet Chahal,Jalandhar,tier2,18-24,other,pa,android,ad,2026-08-01,gold,87,True,9,13299.25,Loyal Champion,sure-thing
+3336,Jaspreet Gill,Patiala,tier2,55+,other,pa,android,influencer,2026-10-09,bronze,0,True,9999,0.0,New Explorer,persuadable
+3407,Amandeep Mann,Jalandhar,tier2,18-24,M,hi,ios,referral,2026-08-24,bronze,5,True,14,572.82,New Explorer,sure-thing
+3485,Jaspreet Sandhu,Jalandhar,tier2,45-54,M,en,ios,influencer,2026-04-30,gold,396,True,3,41381.36,Loyal Champion,sure-thing
+3528,Inderjit Sharma,Hoshiarpur,tier3,45-54,other,pa,android,influencer,2026-04-02,bronze,44,True,4,4121.07,Coupon Abuser,persuadable
+3625,Anmol Chahal,Ludhiana,tier2,45-54,other,pa,web,organic,2026-06-17,silver,9,True,90,888.41,At-Risk,persuadable
+4302,Karan Chahal,Patiala,tier2,55+,other,hi,web,ad,2025-11-15,bronze,0,True,9999,0.0,Dormant,lost-cause
+4393,Diya Gill,Delhi NCR,metro,18-24,M,hi,android,organic,2025-07-08,bronze,7,False,310,1041.5,At-Risk,persuadable
+4545,Harpreet Sandhu,Moga,tier3,25-34,other,en,android,influencer,2025-11-19,bronze,25,True,99,3764.31,At-Risk,lost-cause
