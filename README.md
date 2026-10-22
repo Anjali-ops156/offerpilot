@@ -3,9 +3,10 @@
 An agentic, guardrailed personalised offer engine — built for Hackathon 2
 (Punjab Jobs AI Bootcamp, J-PAL South Asia). All data is synthetic.
 
-**Status: Day 1 thin slice.** Synthetic customers → a deterministic rules
-engine → one Telegram message. The AI agent, uplift modelling, and the
-marketing dashboard land in later phases (see Roadmap below).
+**Status: Day 1 thin slice — verified end-to-end.** Synthetic customers →
+a deterministic rules engine → one real Telegram message, confirmed working
+live. The AI agent, uplift modelling, and the marketing dashboard land in
+later phases (see Roadmap below).
 
 ## Setup (5 steps)
 
@@ -72,7 +73,7 @@ picker standing in for the agent box until Phase 4.
 
 | Phase | What | Status |
 |---|---|---|
-| 0 | Thin end-to-end slice (data → rules → bot) | ✅ in progress |
+| 0 | Thin end-to-end slice (data → rules → bot) | ✅ done |
 | 1 | Full synthetic data generator + realism validation | planned |
 | 2 | RFM, churn model, uplift (T-learner) model | planned |
 | 3 | Full rules engine, conflict checker, versioning | planned |
