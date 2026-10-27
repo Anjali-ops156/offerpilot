@@ -186,7 +186,10 @@ def _fallback(
     # fallback ignores that cap and sends anyway). Skipped entirely for a
     # /simulate preview (enforce_cadence=False), which never sends for real.
     if offer.type != "no_offer" and enforce_cadence:
-        ok, cadence_reason = can_send_now(session, customer.id, limits, cost, now, respect_quiet_hours=respect_quiet_hours)
+        ok, cadence_reason = can_send_now(
+            session, customer.id, limits, cost, now,
+            respect_quiet_hours=respect_quiet_hours, max_offers_per_week=customer.preferred_max_offers_per_week,
+        )
         if not ok:
             offer = catalogue.get("no_offer")
             reason = f"{reason}; fallback also blocked: {cadence_reason}"

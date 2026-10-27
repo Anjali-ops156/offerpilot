@@ -45,7 +45,10 @@ async def push_to_eligible_customers() -> dict:
 
             # Cheap pre-check with a worst-case cost before spending an API
             # call. True here: this IS a proactive push, quiet hours applies.
-            ok, reason = can_send_now(session, customer.id, limits, limits.max_offer_value_inr, now, respect_quiet_hours=True)
+            ok, reason = can_send_now(
+                session, customer.id, limits, limits.max_offer_value_inr, now,
+                respect_quiet_hours=True, max_offers_per_week=customer.preferred_max_offers_per_week,
+            )
             if not ok:
                 logger.info("customer_id=%s skipped: %s", customer.id, reason)
                 skipped += 1

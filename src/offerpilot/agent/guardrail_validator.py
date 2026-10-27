@@ -61,7 +61,10 @@ def validate_submission(
     if enforce_cadence:
         expected_order_value = features.get("avg_order_value") or 1000.0
         cost = offer_cost_inr(expected_order_value, offer, limits)
-        ok, reason = can_send_now(session, customer.id, limits, cost, now, respect_quiet_hours=respect_quiet_hours)
+        ok, reason = can_send_now(
+            session, customer.id, limits, cost, now,
+            respect_quiet_hours=respect_quiet_hours, max_offers_per_week=customer.preferred_max_offers_per_week,
+        )
         if not ok:
             return False, f"cannot send right now: {reason}", None
 

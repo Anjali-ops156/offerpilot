@@ -99,17 +99,28 @@ def is_quiet_hours(now: datetime, limits: Limits) -> bool:
     return hour >= start or hour < end  # wraps past midnight, e.g. 22 -> 8
 
 
-def check_frequency(session, customer_id: int, limits: Limits, now: datetime) -> tuple[bool, str]:
+def check_frequency(
+    session, customer_id: int, limits: Limits, now: datetime, max_offers_per_week: int | None = None,
+) -> tuple[bool, str]:
+    """max_offers_per_week: a customer's own /preferences override, if set —
+    always the SMALLER of it and the platform cap; a customer can ask for
+    fewer offers, never more than the platform allows."""
+    effective_weekly_cap = min(limits.max_offers_per_week, max_offers_per_week or limits.max_offers_per_week)
+
     recent = (
         session.query(SentOffer)
-        .filter(SentOffer.customer_id == customer_id, SentOffer.sent_at >= now - timedelta(days=7))
+        .filter(
+            SentOffer.customer_id == customer_id,
+            SentOffer.sent_at >= now - timedelta(days=7),
+            SentOffer.sent_at <= now,  # defensive: a clock-skewed or simulated future row must never count
+        )
         .all()
     )
     today_count = sum(1 for s in recent if s.sent_at >= now - timedelta(days=1))
     if today_count >= limits.max_offers_per_day:
         return False, f"max_offers_per_day ({limits.max_offers_per_day}) already reached"
-    if len(recent) >= limits.max_offers_per_week:
-        return False, f"max_offers_per_week ({limits.max_offers_per_week}) already reached"
+    if len(recent) >= effective_weekly_cap:
+        return False, f"max_offers_per_week ({effective_weekly_cap}) already reached"
     if recent:
         last_sent = max(s.sent_at for s in recent)
         if now - last_sent < timedelta(days=limits.cooldown_days_after_offer):
@@ -122,13 +133,13 @@ def check_budget(session, limits: Limits, proposed_cost_inr: float, now: datetim
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     spent_today = (
-        session.query(SentOffer).filter(SentOffer.sent_at >= day_start).all()
+        session.query(SentOffer).filter(SentOffer.sent_at >= day_start, SentOffer.sent_at <= now).all()
     )
     spent_today_total = sum(s.cost_inr for s in spent_today)
     if spent_today_total + proposed_cost_inr > limits.daily_budget_inr:
         return False, f"would exceed daily_budget_inr (Rs {limits.daily_budget_inr})"
 
-    spent_month = session.query(SentOffer).filter(SentOffer.sent_at >= month_start).all()
+    spent_month = session.query(SentOffer).filter(SentOffer.sent_at >= month_start, SentOffer.sent_at <= now).all()
     spent_month_total = sum(s.cost_inr for s in spent_month)
     if spent_month_total + proposed_cost_inr > limits.campaign_budget_inr:
         return False, f"would exceed campaign_budget_inr (Rs {limits.campaign_budget_inr})"
@@ -137,15 +148,16 @@ def check_budget(session, limits: Limits, proposed_cost_inr: float, now: datetim
 
 def can_send_now(
     session, customer_id: int, limits: Limits, proposed_cost_inr: float, now: datetime,
-    respect_quiet_hours: bool = True,
+    respect_quiet_hours: bool = True, max_offers_per_week: int | None = None,
 ) -> tuple[bool, str]:
     """respect_quiet_hours=False for a PULL interaction (a classmate opening
     the bot themselves via /start) — quiet hours exists to stop unsolicited
     PUSH notifications at night, not to refuse someone who's already here.
-    Frequency caps, cooldown, and budget apply either way."""
+    Frequency caps, cooldown, and budget apply either way.
+    max_offers_per_week: the customer's own /preferences override, if set."""
     if respect_quiet_hours and is_quiet_hours(now, limits):
         return False, "quiet hours"
-    ok, reason = check_frequency(session, customer_id, limits, now)
+    ok, reason = check_frequency(session, customer_id, limits, now, max_offers_per_week)
     if not ok:
         return False, reason
     return check_budget(session, limits, proposed_cost_inr, now)

@@ -68,6 +68,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "hi": "Abhi explain karne ke liye koi recent decision nahi hai — pehle /start karein.",
         "pa": "Hale explain karan layi koi recent decision nahi hai — pehlan /start karo.",
     },
+    "why_fallback_reasoning": {
+        "en": "This was decided by our rule-based policy, within the same limits the AI agent follows.",
+        "hi": "Yeh hamari rule-based policy se decide hua, usi limits ke andar jo AI agent follow karta hai.",
+        "pa": "Eh sadi rule-based policy ton decide hoya, ohi limits de andar jo AI agent follow karda hai.",
+    },
     "why_intro": {
         "en": "Here's why, in plain terms:",
         "hi": "Yeh raha simple karan:",
@@ -157,7 +162,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 }
 
 
-def t(key: str, language: str, **kwargs) -> str:
-    lang = language if language in SUPPORTED_LANGUAGES else "en"
+def t(key: str, for_language: str, **kwargs) -> str:
+    """for_language (not `language`) deliberately avoids colliding with
+    templates that have a {language} placeholder, e.g. preferences_menu."""
+    lang = for_language if for_language in SUPPORTED_LANGUAGES else "en"
     template = TRANSLATIONS[key].get(lang, TRANSLATIONS[key]["en"])
     return template.format(**kwargs) if kwargs else template
