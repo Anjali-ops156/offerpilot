@@ -1,0 +1,30 @@
+{
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: assume private unless the remote host and repo name indicate otherwise, or a visibility check in the transcript shows public — no remotes configured for this repo, cannot verify via gh; treat as local-only until a remote is added",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: None configured — project uses a local `.env` file (gitignored) for Telegram bot token and Anthropic API key, with a pre-commit hook (`scripts/install_hooks.py`) to block committing secrets",
+      "**Default / protected branches**: unknown — no git remote configured and branch protection not queryable via gh",
+      "**CI/CD deploy targets**: None configured",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine (Windows, per repo path) with open internet",
+      "**Source control**: The trusted repo (OfferPilot, local checkout at C:\\Users\\Anjali\\Documents\\claude code\\offerpilot) — no remotes configured",
+      "**Trusted internal domains**: None configured",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: None configured",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: `.env` and `.env.example` (credentials: Telegram bot token, Anthropic API key, database URL); `data/validation/` files (synthetic customer data charts/stats, though the repo states all data is synthetic); per-customer account data the agent reads during offer decisions is scoped to one customer at a time and must not be shared across customers or expose the hidden persona/uplift label",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (agentic offer-engine project, Python/ML)",
+      "**Trusted repo**: this repo (OfferPilot) at its local path, C:\\Users\\Anjali\\Documents\\claude code\\offerpilot — no remotes configured",
+      "**Org-specific CLIs**: None configured"
+    ]
+  }
+}
