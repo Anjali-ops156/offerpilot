@@ -3,12 +3,13 @@
 An agentic, guardrailed personalised offer engine — built for Hackathon 2
 (Punjab Jobs AI Bootcamp, J-PAL South Asia). All data is synthetic.
 
-**Status: Phase 3 done.** 5,000 synthetic customers feed a feature store, a
-churn-risk model, and a T-learner uplift model into a full rules engine —
-tier-fair win-back discounts, behavioural abuse protection, budget pacing,
-frequency caps, and a conflict checker — that sends real, personalised,
-guardrailed Telegram messages. The Claude agent and the marketing dashboard
-land in later phases (see Roadmap below).
+**Status: Phase 4 done.** A Claude tool-use agent now decides, per customer,
+whether to send an offer and which one — the customer never chooses; the
+agent reads that one customer's own account data (never anyone else's, never
+the hidden persona/uplift label) and reasons it out itself. Every AI
+decision is re-checked by a deterministic guardrail validator before
+anything is sent, with a safe rule-based fallback, a kill switch, and a full
+audit log. The marketing dashboard lands in a later phase (see Roadmap).
 
 ## Setup (6 steps)
 
@@ -45,8 +46,11 @@ land in later phases (see Roadmap below).
    ```bash
    python -m offerpilot.bot.main
    ```
-   Message your bot `/start` on Telegram — it assigns you a synthetic customer
-   profile and sends back the one offer the rules engine picked for them.
+   Message your bot `/start` on Telegram. The Claude agent decides — on its
+   own, from that customer's own account data — whether they get an offer and
+   which one; you never pick it yourself. If `ANTHROPIC_API_KEY` is missing or
+   the kill switch is on, it falls back to the Phase 3 rule-based picker
+   automatically rather than failing.
    (Regenerating data resets every classmate's binding — they just re-run `/start`.)
 
 ## Running tests
@@ -147,6 +151,51 @@ the hidden persona label). Quiet hours is enforced for future proactive
 pushes (Phase 8) but intentionally not against `/start` itself, since that's
 the classmate opening the bot, not the bot interrupting them.
 
+## The agent (Phase 4)
+
+[`agent/agent.py`](src/offerpilot/agent/agent.py) runs a Claude tool-use loop
+— observe, reason, pick an offer or deliberately none, personalise the
+message, submit — for exactly one customer per run. It is never told that
+customer's hidden persona or uplift label; it can only see what a real
+support agent could see.
+
+**Tools** ([`agent/tools.py`](src/offerpilot/agent/tools.py)) — each scoped
+to that one customer, `customer_id` is never a parameter the model can set:
+`get_customer_profile`, `get_recent_events`, `get_eligible_offers`,
+`estimate_uplift`, `simulate_margin`, `check_budget`, `draft_message`,
+`submit_offer`. Most of these are thin wrappers over Phase 2/3 functions —
+the agent doesn't reimplement the rules, it calls them.
+
+**Guardrail validator** ([`agent/guardrail_validator.py`](src/offerpilot/agent/guardrail_validator.py))
+is the deterministic final authority on every `submit_offer` call: the offer
+must still be in that customer's live eligible set, sending must still be
+allowed right now (frequency/cooldown/budget), the message must quote the
+*actual* offer value (never a fabricated discount), contain no forbidden
+pressure-tactic phrasing, and leak no internal terminology
+(persona/uplift/churn — a message must never expose the score behind a
+decision). A rejected submission gets fed back to the agent with the
+reason; after 2 retries it falls back to the Phase 3 rule-based picker so a
+customer always gets *some* safe response, never a crash or a hang.
+
+**Defence in depth, not just a polite system prompt**: the guardrail
+validator never trusts the agent's stated reasoning — only the mechanical
+facts (offer type, message text) are checked. `tests/test_guardrail_validator.py`
+proves this directly: even a message that looks like a successful prompt
+injection ("SYSTEM OVERRIDE... ignore all previous rules...") is rejected
+on the same mechanical grounds as any other invalid offer. Full
+conversational injection testing (a customer's own Telegram reply trying to
+talk the agent into a bigger discount) lands in Phase 5, once customer
+replies actually reach the agent.
+
+**Kill switch**: `OFFERPILOT_KILL_SWITCH=true` in `.env` stops all AI-generated
+offers instantly — the bot falls back to the deterministic picker, no
+restart needed on the next request.
+
+**Audit log**: every run — AI success, AI fallback after rejections, or a
+kill-switch/no-key bypass — is written to `AuditLog` (inputs, a plain-language
+reasoning summary, the validator's verdict, and the final message), which is
+what Phase 5's `/why` will read from.
+
 ## Architecture
 
 ```mermaid
@@ -161,11 +210,11 @@ flowchart LR
     E --> H[Audit Log]
 ```
 
-The bot currently runs `A -> B -> C -> F`: the feature store feeds the
-rules engine's abuse check, but the uplift/churn MODELS themselves aren't
-in that live path yet — `C` still uses a simple deterministic picker
-standing in for the `D` agent box until Phase 4 wires the models' scores
-into the decision.
+All of `A` through `H` are now live: the feature store (`B`) feeds both the
+rules engine's abuse check (`C`) and the agent's `estimate_uplift` tool
+(`D`); the agent submits to the guardrail validator (`E`), which either
+sends via the bot (`F`) or kicks back to the agent for a retry; every run
+writes to the audit log (`H`) regardless of outcome.
 
 ## Roadmap
 
@@ -175,7 +224,7 @@ into the decision.
 | 1 | Full synthetic data generator + realism validation | ✅ done |
 | 2 | RFM, churn model, uplift (T-learner) model | ✅ done |
 | 3 | Full rules engine, conflict checker, versioning | ✅ done |
-| 4 | Claude tool-use agent + guardrail validator | planned |
+| 4 | Claude tool-use agent + guardrail validator | ✅ done |
 | 5 | Full Telegram bot (cards, /why, /simulate, negotiation, i18n) | planned |
 | 6 | Holdout measurement, basic offline evaluation | stretch |
 | 7 | Streamlit dashboard | stretch (minimal version) |

@@ -105,9 +105,37 @@ def load_models():
     return joblib.load(MODELS_DIR / "uplift_treated.joblib"), joblib.load(MODELS_DIR / "uplift_control.joblib")
 
 
+_MODEL_CACHE: tuple | None = None
+
+
+def load_models_cached() -> tuple | None:
+    """Returns (model_t, model_c), or None if the models haven't been
+    trained yet (python -m offerpilot.features.uplift_model) — callers on
+    the hot path (the bot) should treat None as "uplift unavailable" rather
+    than crashing the request."""
+    global _MODEL_CACHE
+    if _MODEL_CACHE is None:
+        try:
+            _MODEL_CACHE = load_models()
+        except FileNotFoundError:
+            return None
+    return _MODEL_CACHE
+
+
 def predict_uplift(model_t, model_c, features_df: pd.DataFrame) -> np.ndarray:
     X = features_df[NUMERIC_FEATURES + CATEGORICAL_FEATURES]
     return model_t.predict_proba(X)[:, 1] - model_c.predict_proba(X)[:, 1]
+
+
+def predict_uplift_for_one(customer, features: dict, model_t, model_c) -> float:
+    """Single-customer convenience wrapper for the agent's estimate_uplift tool."""
+    row = {col: features.get(col, 0) for col in NUMERIC_FEATURES}
+    row["city_tier"] = customer.city_tier
+    row["loyalty_tier"] = customer.loyalty_tier
+    row["age_band"] = customer.age_band
+    row["device"] = customer.device
+    df = pd.DataFrame([row])
+    return float(predict_uplift(model_t, model_c, df)[0])
 
 
 if __name__ == "__main__":

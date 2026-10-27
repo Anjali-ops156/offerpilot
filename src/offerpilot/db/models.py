@@ -121,3 +121,28 @@ class RuleChangeLog(Base):
     summary = Column(String, nullable=False)
     file = Column(String, nullable=False)  # e.g. "limits.yaml"
     content_snapshot = Column(String, nullable=False)  # full file content at this point
+
+
+class AuditLog(Base):
+    """Every agent decision, win or lose: inputs, a short reasoning summary,
+    what it chose, what the guardrail validator said, and the final message
+    (if any was actually sent). This is what /why reads from in Phase 5, and
+    what proves "guardrail-violation rate: 0 sent" for Phase 6."""
+    __tablename__ = "audit_log"
+
+    id = Column(Integer, primary_key=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False, index=True)
+    created_at = Column(DateTime, nullable=False, index=True)
+
+    kill_switch_active = Column(Boolean, nullable=False, default=False)
+    agent_reasoning_summary = Column(String, nullable=True)  # None when the kill switch bypassed the agent entirely
+    proposed_offer_type = Column(String, nullable=True)
+    proposed_message = Column(String, nullable=True)
+    retries_used = Column(Integer, nullable=False, default=0)
+
+    validator_verdict = Column(String, nullable=False)  # "pass" | "fail" | "fallback" | "bypassed"
+    validator_reason = Column(String, nullable=True)
+
+    final_offer_type = Column(String, nullable=False)  # what was ACTUALLY sent, after any fallback
+    final_message = Column(String, nullable=False)
+    used_fallback = Column(Boolean, nullable=False, default=False)

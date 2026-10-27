@@ -9,6 +9,7 @@ load_dotenv(REPO_ROOT / ".env")
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{REPO_ROOT / 'data' / 'offerpilot.db'}")
 KILL_SWITCH = os.environ.get("OFFERPILOT_KILL_SWITCH", "false").lower() == "true"
 
