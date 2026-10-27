@@ -17,7 +17,7 @@ from offerpilot.bot.cards import format_offer_message
 from offerpilot.config import ANTHROPIC_API_KEY, ANTHROPIC_MODEL, KILL_SWITCH
 from offerpilot.db.models import Customer
 from offerpilot.features.next_best_action import offer_cost_inr
-from offerpilot.rules.engine import pick_offer, record_sent_offer
+from offerpilot.rules.engine import can_send_now, pick_offer, record_sent_offer
 from offerpilot.rules.schema import Limits, OfferCatalogue
 
 logger = logging.getLogger(__name__)
@@ -135,9 +135,21 @@ def _fallback(
     kill_switch_active: bool, retries_used: int, verdict: str, reason: str,
 ) -> dict:
     offer = pick_offer(customer, features, catalogue, limits)
+    cost = offer_cost_inr(features.get("avg_order_value") or 1000.0, offer, limits) if offer.type != "no_offer" else 0.0
+
+    # The fallback must obey the SAME send-cadence guardrails the agent's
+    # rejected submission did — otherwise it's a loophole that undoes
+    # exactly the guardrail that triggered the fallback in the first place
+    # (e.g. retries exhausted because of the frequency cap, then the
+    # fallback ignores that cap and sends anyway).
+    if offer.type != "no_offer":
+        ok, cadence_reason = can_send_now(session, customer.id, limits, cost, now, respect_quiet_hours=False)
+        if not ok:
+            offer = catalogue.get("no_offer")
+            reason = f"{reason}; fallback also blocked: {cadence_reason}"
+
     message = format_offer_message(customer, offer)
     if offer.type != "no_offer":
-        cost = offer_cost_inr(features.get("avg_order_value") or 1000.0, offer, limits)
         record_sent_offer(session, customer.id, offer.type, cost, now)
     audit_log.write_entry(
         session, customer.id, now, kill_switch_active=kill_switch_active,

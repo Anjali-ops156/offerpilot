@@ -5,8 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import offerpilot.agent.agent as agent_module
-from offerpilot.db.models import AuditLog, Base, Customer
-from offerpilot.rules.engine import load_catalogue, load_limits
+from offerpilot.db.models import AuditLog, Base, Customer, SentOffer
+from offerpilot.rules.engine import load_catalogue, load_limits, record_sent_offer
 
 
 @pytest.fixture
@@ -54,3 +54,23 @@ def test_missing_api_key_bypasses_the_agent_and_still_responds(session, monkeypa
     entry = session.query(AuditLog).filter_by(customer_id=1).first()
     assert entry.kill_switch_active is False
     assert "ANTHROPIC_API_KEY" in entry.validator_reason
+
+
+def test_fallback_still_obeys_the_frequency_cap(session, monkeypatch):
+    """Regression test: a fallback triggered BECAUSE the frequency cap was
+    hit must not itself ignore that same cap — that would be a loophole
+    that undoes the guardrail which caused the fallback in the first place."""
+    monkeypatch.setattr(agent_module, "KILL_SWITCH", True)  # force the bypass path, no API call needed
+    customer = make_customer()
+    limits = load_limits()
+
+    # Simulate today's offer already having gone out.
+    record_sent_offer(session, customer_id=1, offer_type="free_shipping", cost_inr=0, sent_at=datetime.now())
+
+    result = agent_module.run_agent_for_customer(
+        customer, {}, load_catalogue(), limits, session, datetime.now(),
+    )
+    assert result["offer"].type == "no_offer"
+
+    sent_offers_today = session.query(SentOffer).filter_by(customer_id=1).count()
+    assert sent_offers_today == 1  # still just the one from before — fallback did not add a second
