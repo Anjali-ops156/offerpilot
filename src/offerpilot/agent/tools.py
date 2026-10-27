@@ -29,6 +29,7 @@ class AgentContext:
     language: str
     uplift_score: float | None  # None if the uplift model isn't trained yet
     respect_quiet_hours: bool = True  # False for a pull interaction (/start) — see agent.run_agent_for_customer
+    enforce_cadence: bool = True  # False for a /simulate preview — never counts against real quota
     submission: dict | None = None  # set once a submit_offer call is ACCEPTED
     retries_used: int = 0
     last_rejection_reason: str | None = None
@@ -206,6 +207,8 @@ def dispatch_tool(name: str, tool_input: dict, ctx: AgentContext) -> dict:
             ctx.customer, ctx.features, tool_input["offer_type"], tool_input["message"],
             ctx.catalogue, ctx.limits, ctx.session, ctx.now,
             respect_quiet_hours=ctx.respect_quiet_hours,
+            reasoning_summary=tool_input.get("reasoning_summary", ""),
+            enforce_cadence=ctx.enforce_cadence,
         )
         if ok:
             ctx.submission = {

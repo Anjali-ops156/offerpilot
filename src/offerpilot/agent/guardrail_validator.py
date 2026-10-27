@@ -44,20 +44,26 @@ def _offer_amount_is_quoted_correctly(offer: Offer, message: str) -> bool:
 def validate_submission(
     customer: Customer, features: dict, offer_type: str, message: str,
     catalogue: OfferCatalogue, limits: Limits, session, now: datetime,
-    respect_quiet_hours: bool = True,
+    respect_quiet_hours: bool = True, reasoning_summary: str = "", enforce_cadence: bool = True,
 ) -> tuple[bool, str, Offer | None]:
     """respect_quiet_hours=False for a PULL interaction (/start) — see
-    rules.engine.can_send_now for why. Proactive pushes must pass True."""
+    rules.engine.can_send_now for why. Proactive pushes must pass True.
+
+    enforce_cadence=False for a /simulate PREVIEW — a sandbox "what offer
+    would I get" exploration that must never count against the real
+    frequency/budget quota. Content checks (eligibility, no fabricated
+    discounts, no leaked terms) still apply even in preview mode."""
     eligible = {o.type: o for o in get_eligible_offers(customer, features, catalogue, limits)}
     if offer_type not in eligible:
         return False, f"'{offer_type}' is not currently eligible for this customer (consent/abuse/cap/fairness filter)", None
     offer = eligible[offer_type]
 
-    expected_order_value = features.get("avg_order_value") or 1000.0
-    cost = offer_cost_inr(expected_order_value, offer, limits)
-    ok, reason = can_send_now(session, customer.id, limits, cost, now, respect_quiet_hours=respect_quiet_hours)
-    if not ok:
-        return False, f"cannot send right now: {reason}", None
+    if enforce_cadence:
+        expected_order_value = features.get("avg_order_value") or 1000.0
+        cost = offer_cost_inr(expected_order_value, offer, limits)
+        ok, reason = can_send_now(session, customer.id, limits, cost, now, respect_quiet_hours=respect_quiet_hours)
+        if not ok:
+            return False, f"cannot send right now: {reason}", None
 
     if not message or not message.strip():
         return False, "message is empty", None
@@ -71,6 +77,11 @@ def validate_submission(
     for term in LEAKED_INTERNAL_TERMS:
         if term in lowered:
             return False, f"message leaks an internal term that must never reach the customer: '{term}'", None
+
+    reasoning_lowered = reasoning_summary.lower()
+    for term in LEAKED_INTERNAL_TERMS:
+        if term in reasoning_lowered:
+            return False, f"reasoning_summary leaks an internal term (shown to the customer via /why): '{term}'", None
 
     if not _offer_amount_is_quoted_correctly(offer, message):
         return False, (

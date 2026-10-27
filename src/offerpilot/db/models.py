@@ -36,6 +36,10 @@ class Customer(Base):
     # bound once a classmate runs /start against this synthetic customer
     telegram_chat_id = Column(Integer, nullable=True, unique=True)
 
+    # classmate-set preferences (Phase 5 /preferences) — null = use platform defaults
+    preferred_max_offers_per_week = Column(Integer, nullable=True)
+    onboarded = Column(Boolean, nullable=False, default=False)  # seen the /start consent screen
+
     events = relationship("Event", back_populates="customer", cascade="all, delete-orphan")
 
 
@@ -146,3 +150,13 @@ class AuditLog(Base):
     final_offer_type = Column(String, nullable=False)  # what was ACTUALLY sent, after any fallback
     final_message = Column(String, nullable=False)
     used_fallback = Column(Boolean, nullable=False, default=False)
+
+
+class Feedback(Base):
+    """Free-text feedback from a classmate (Phase 5 /feedback)."""
+    __tablename__ = "feedback"
+
+    id = Column(Integer, primary_key=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False, index=True)
+    created_at = Column(DateTime, nullable=False, index=True)
+    text = Column(String, nullable=False)

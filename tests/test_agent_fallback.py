@@ -19,12 +19,14 @@ def session():
     s.close()
 
 
-def make_customer() -> Customer:
-    return Customer(
+def make_customer(**overrides) -> Customer:
+    defaults = dict(
         id=1, name="Test", city="Ludhiana", city_tier="tier2", language="en",
         loyalty_tier="bronze", reward_points_balance=0, consent_opt_in=True,
         days_since_last_purchase=1, total_spend=1000.0,
     )
+    defaults.update(overrides)
+    return Customer(**defaults)
 
 
 def test_kill_switch_bypasses_the_agent_entirely(session, monkeypatch):
@@ -74,3 +76,17 @@ def test_fallback_still_obeys_the_frequency_cap(session, monkeypatch):
 
     sent_offers_today = session.query(SentOffer).filter_by(customer_id=1).count()
     assert sent_offers_today == 1  # still just the one from before — fallback did not add a second
+
+
+def test_preview_mode_never_records_a_sent_offer(session, monkeypatch):
+    """/simulate previews (enforce_cadence=False) must show a real decision
+    without ever counting against the customer's actual frequency/budget quota."""
+    monkeypatch.setattr(agent_module, "KILL_SWITCH", True)  # force the bypass path, no API call needed
+    customer = make_customer(days_since_last_purchase=50)  # eligible for win_back_discount
+    limits = load_limits()
+
+    result = agent_module.run_agent_for_customer(
+        customer, {}, load_catalogue(), limits, session, datetime.now(), enforce_cadence=False,
+    )
+    assert result["offer"].type == "win_back_discount"  # a real decision was still made
+    assert session.query(SentOffer).filter_by(customer_id=1).count() == 0  # but nothing was recorded

@@ -95,6 +95,19 @@ def test_rejects_leaked_internal_terminology(session, catalogue, limits):
     assert "internal term" in reason
 
 
+def test_rejects_leaked_internal_term_in_reasoning_summary(session, catalogue, limits):
+    """reasoning_summary is shown to the customer via /why, so it needs the
+    same leak check as the message itself."""
+    customer = make_customer()
+    ok, reason, _ = validate_submission(
+        customer, NO_SIGNAL_FEATURES, "free_shipping", "Free shipping on your next order",
+        catalogue, limits, session, DAYTIME,
+        reasoning_summary="This customer has a high CLV and low churn risk.",
+    )
+    assert ok is False
+    assert "internal term" in reason
+
+
 def test_rejects_empty_message(session, catalogue, limits):
     customer = make_customer()
     ok, reason, _ = validate_submission(

@@ -23,17 +23,17 @@ ALLOWED_FILES = {".env.example", "githooks/pre-commit"}
 def staged_diff() -> str:
     result = subprocess.run(
         ["git", "diff", "--cached", "-U0", "--no-color"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
-    return result.stdout
+    return result.stdout or ""
 
 
 def staged_files() -> list[str]:
     result = subprocess.run(
         ["git", "diff", "--cached", "--name-only"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
-    return [f.strip() for f in result.stdout.splitlines() if f.strip()]
+    return [f.strip() for f in (result.stdout or "").splitlines() if f.strip()]
 
 
 def main() -> int:
@@ -43,7 +43,6 @@ def main() -> int:
         return 1
 
     diff = staged_diff()
-    added_lines = [line for line in diff.splitlines() if line.startswith("+") and not line.startswith("+++")]
 
     hits = []
     current_file = None
