@@ -28,6 +28,7 @@ class AgentContext:
     now: datetime
     language: str
     uplift_score: float | None  # None if the uplift model isn't trained yet
+    respect_quiet_hours: bool = True  # False for a pull interaction (/start) — see agent.run_agent_for_customer
     submission: dict | None = None  # set once a submit_offer call is ACCEPTED
     retries_used: int = 0
     last_rejection_reason: str | None = None
@@ -204,6 +205,7 @@ def dispatch_tool(name: str, tool_input: dict, ctx: AgentContext) -> dict:
         ok, reason, offer = validate_submission(
             ctx.customer, ctx.features, tool_input["offer_type"], tool_input["message"],
             ctx.catalogue, ctx.limits, ctx.session, ctx.now,
+            respect_quiet_hours=ctx.respect_quiet_hours,
         )
         if ok:
             ctx.submission = {

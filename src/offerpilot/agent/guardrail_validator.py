@@ -44,7 +44,10 @@ def _offer_amount_is_quoted_correctly(offer: Offer, message: str) -> bool:
 def validate_submission(
     customer: Customer, features: dict, offer_type: str, message: str,
     catalogue: OfferCatalogue, limits: Limits, session, now: datetime,
+    respect_quiet_hours: bool = True,
 ) -> tuple[bool, str, Offer | None]:
+    """respect_quiet_hours=False for a PULL interaction (/start) — see
+    rules.engine.can_send_now for why. Proactive pushes must pass True."""
     eligible = {o.type: o for o in get_eligible_offers(customer, features, catalogue, limits)}
     if offer_type not in eligible:
         return False, f"'{offer_type}' is not currently eligible for this customer (consent/abuse/cap/fairness filter)", None
@@ -52,7 +55,7 @@ def validate_submission(
 
     expected_order_value = features.get("avg_order_value") or 1000.0
     cost = offer_cost_inr(expected_order_value, offer, limits)
-    ok, reason = can_send_now(session, customer.id, limits, cost, now, respect_quiet_hours=False)
+    ok, reason = can_send_now(session, customer.id, limits, cost, now, respect_quiet_hours=respect_quiet_hours)
     if not ok:
         return False, f"cannot send right now: {reason}", None
 

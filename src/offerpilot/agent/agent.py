@@ -58,19 +58,25 @@ USER_MESSAGE = "Decide the offer (if any) for this customer and submit it."
 
 def run_agent_for_customer(
     customer: Customer, features: dict, catalogue: OfferCatalogue, limits: Limits,
-    session, now: datetime, uplift_score: float | None = None,
+    session, now: datetime, uplift_score: float | None = None, respect_quiet_hours: bool = False,
 ) -> dict:
-    """Returns {"offer": Offer, "message": str, "used_ai": bool}."""
+    """Returns {"offer": Offer, "message": str, "used_ai": bool}.
+
+    respect_quiet_hours: False (default) for a PULL interaction like /start
+    — the classmate opened the bot themselves, so quiet hours (meant to
+    stop unsolicited pushes at night) shouldn't refuse them. Proactive
+    pushes (agent.proactive_push) must pass True.
+    """
     language = customer.language if customer.language in {"en", "hi", "pa"} else "en"
 
     if KILL_SWITCH:
         return _fallback(
-            customer, features, catalogue, limits, session, now,
+            customer, features, catalogue, limits, session, now, respect_quiet_hours,
             kill_switch_active=True, retries_used=0, verdict="bypassed", reason="kill switch is active",
         )
     if not ANTHROPIC_API_KEY:
         return _fallback(
-            customer, features, catalogue, limits, session, now,
+            customer, features, catalogue, limits, session, now, respect_quiet_hours,
             kill_switch_active=False, retries_used=0, verdict="bypassed",
             reason="ANTHROPIC_API_KEY not configured",
         )
@@ -78,6 +84,7 @@ def run_agent_for_customer(
     ctx = AgentContext(
         session=session, customer=customer, features=features, catalogue=catalogue,
         limits=limits, now=now, language=language, uplift_score=uplift_score,
+        respect_quiet_hours=respect_quiet_hours,
     )
     messages = [{"role": "user", "content": USER_MESSAGE}]
 
@@ -124,14 +131,14 @@ def run_agent_for_customer(
         return {"offer": offer, "message": message, "used_ai": True}
 
     return _fallback(
-        customer, features, catalogue, limits, session, now,
+        customer, features, catalogue, limits, session, now, respect_quiet_hours,
         kill_switch_active=False, retries_used=ctx.retries_used,
         verdict="fail", reason=ctx.last_rejection_reason or "agent did not submit a valid offer",
     )
 
 
 def _fallback(
-    customer, features, catalogue, limits, session, now, *,
+    customer, features, catalogue, limits, session, now, respect_quiet_hours, *,
     kill_switch_active: bool, retries_used: int, verdict: str, reason: str,
 ) -> dict:
     offer = pick_offer(customer, features, catalogue, limits)
@@ -143,7 +150,7 @@ def _fallback(
     # (e.g. retries exhausted because of the frequency cap, then the
     # fallback ignores that cap and sends anyway).
     if offer.type != "no_offer":
-        ok, cadence_reason = can_send_now(session, customer.id, limits, cost, now, respect_quiet_hours=False)
+        ok, cadence_reason = can_send_now(session, customer.id, limits, cost, now, respect_quiet_hours=respect_quiet_hours)
         if not ok:
             offer = catalogue.get("no_offer")
             reason = f"{reason}; fallback also blocked: {cadence_reason}"
